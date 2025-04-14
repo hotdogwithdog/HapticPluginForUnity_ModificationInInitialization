@@ -3,6 +3,8 @@
 #+date: 2018-07-03 Tue
 #+setupfile: ./theme/theme-readtheorg-local.setup
 
+# THIS IS A MODIFICATION DO BY Iván García García, it's just in the initialization of the plugin wrapper for unity the rest it's the same of the original just do it in other repository for comfort   
+
 * Support
 
 If you have an account here on github.com, please ask for support by opening an issue and explaining your problem. That way we'll help others too.
