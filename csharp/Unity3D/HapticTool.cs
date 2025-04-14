@@ -34,12 +34,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+using System;
 using System.IO;
 using UnityEngine;
 
 public class HapticTool : MonoBehaviour {
     public enum Tick { No, Update, FixedUpdate };
     public enum WaitForces { No, Small, Rise };
+
+	// Propio
+	public bool IsInitialize { get; private set; }
+    public Action OnFailInitialize;
+    public Action OnInitialize;
 
     private bool Started = false;
     private bool Running = false;
@@ -210,52 +216,64 @@ public class HapticTool : MonoBehaviour {
     }
     private void Awake()
     {
-	CheckCompatibility();
-	if (UseSphereRadius)
-	{
-	    //// This can only render a sphere.
-	    //// Warn if attached to something else (maybe they just want to get the input position)
-	    if (GetComponent<MeshFilter>().name != "Sphere"
-		&& Verbosity > 0) {
-		Debug.LogWarning("This script is not attached to a sphere " +
-		    "but you are trying to use the sphere radius. You should" +
-		    "instead set the radius manually");
-	    }
-	    // The sphere size in unity is 0.5 units.
-	    // We use the Transform scale on the X axis to get the real size
-	    Radius = transform.lossyScale.x * 0.5f;
-	}
+        Init();
+    }
 
-	SetWaitForForces();
+    public void Init()
+    {
+        CheckCompatibility();
+        if (UseSphereRadius)
+        {
+            //// This can only render a sphere.
+            //// Warn if attached to something else (maybe they just want to get the input position)
+            if (GetComponent<MeshFilter>().name != "Sphere"
+            && Verbosity > 0)
+            {
+                Debug.LogWarning("This script is not attached to a sphere " +
+                    "but you are trying to use the sphere radius. You should" +
+                    "instead set the radius manually");
+            }
+            // The sphere size in unity is 0.5 units.
+            // We use the Transform scale on the X axis to get the real size
+            Radius = transform.lossyScale.x * 0.5f;
+        }
 
-	// FIXME: what to do with workspace radius?
-	UnityHaptics.SetUnityWorldCoordinates();
+        SetWaitForForces();
 
-	int res = HapticNativePlugin.Initialize(DeviceId, WorkspaceSize, Radius);
-	if (res != HapticNativePlugin.SUCCESS)
-	{   // success silently, fail loudly
-	    Debug.LogError("Could not start haptics");
-	    UnityHaptics.LogMessage(res, false);
-	    return;
-	}
+        // FIXME: what to do with workspace radius?
+        UnityHaptics.SetUnityWorldCoordinates();
 
-       //  ForceWorkspaceUpdate();
+        int res = HapticNativePlugin.Initialize(DeviceId, WorkspaceSize, Radius);
+        if (res != HapticNativePlugin.SUCCESS)
+        {   // success silently, fail loudly
+            IsInitialize = false;
+            Debug.LogError("Could not start haptics");
+            UnityHaptics.LogMessage(res, false);
+            return;
+        }
+        Debug.Log("A");
+        IsInitialize = true;
 
-	if (EnableDynamicObjects)
-	{
-	    HapticNativePlugin.enable_dynamic_objects();
-	}
-	else
-	{
-	    HapticNativePlugin.disable_dynamic_objects();
-	}
+        //  ForceWorkspaceUpdate();
 
-	// FIXME: move to UnityHaptics, enable things we want to log and so on
-	if (EnableLog && LogDownsampling != 0) {
-	    HapticNativePlugin.SetupLogging(LogDownsampling, DeviceCoordinates);
-	}
-	// Set initial position
-	UpdateToolPositionAndRotation();
+        if (EnableDynamicObjects)
+        {
+            HapticNativePlugin.enable_dynamic_objects();
+        }
+        else
+        {
+            HapticNativePlugin.disable_dynamic_objects();
+        }
+
+        // FIXME: move to UnityHaptics, enable things we want to log and so on
+        if (EnableLog && LogDownsampling != 0)
+        {
+            HapticNativePlugin.SetupLogging(LogDownsampling, DeviceCoordinates);
+        }
+        // Set initial position
+        UpdateToolPositionAndRotation();
+
+        OnInitialize?.Invoke();
     }
     private void SaveLogIfLogging()
     {
@@ -312,6 +330,7 @@ public class HapticTool : MonoBehaviour {
     // Update is called once per frame
     private void Update()
     {
+        OnFailInitialize?.Invoke();
         //Debug.Log(UnityHaptics.GetToolVelocity());
 	LoopNumber += 1;
 	if (LoopNumber % 100 == 0)

@@ -41,6 +41,9 @@ using System.Linq; // Select
 using UnityEditor;
 
 public abstract class Touchable : MonoBehaviour {
+    // Propio
+    private HapticTool tool;
+
     [Header("Haptic Library Information")]
     /// <summary>
     /// Id of this object in HGPE
@@ -161,15 +164,29 @@ public abstract class Touchable : MonoBehaviour {
     }
 
     // Use this for initialization
-    void Start () {
-	CreateObject();
-	AddToWorld();
-	if (positionInterpolation)
-	{
-	    HapticNativePlugin.enable_position_interpolation(ObjectId);
-	    HapticNativePlugin.set_interpolation_period(ObjectId, InterpolationPeriod, 1.0);
-	}
-	SetObjectProperties();
+    void Start () 
+    {
+        tool = GameObject.FindGameObjectWithTag("HapticDevice").GetComponent<HapticTool>();
+        if (tool.IsInitialize) Init();
+        else
+        {
+            Debug.Log("Object init was for delegate");
+            tool.OnInitialize += Init;
+        }
+    }
+
+    private void Init()
+    {
+        Debug.Log("Enter object init");
+        CreateObject();
+        AddToWorld();
+        if (positionInterpolation)
+        {
+            HapticNativePlugin.enable_position_interpolation(ObjectId);
+            HapticNativePlugin.set_interpolation_period(ObjectId, InterpolationPeriod, 1.0);
+        }
+        SetObjectProperties();
+        tool.OnInitialize -= Init;
     }
     protected abstract void SetObjectProperties();
     /// <summary>
@@ -178,9 +195,12 @@ public abstract class Touchable : MonoBehaviour {
     protected abstract void CreateObject();
     private void FixedUpdate()
     {
-	UpdatePosition();
-	UpdateRotation();
-	// UpdateScale(); // FIXME: Still not working
-	// Debug.Log(Time.deltaTime);
+       if (tool.IsInitialize)
+        {
+	        UpdatePosition();
+	        UpdateRotation();
+	        // UpdateScale(); // FIXME: Still not working
+	        // Debug.Log(Time.deltaTime);
+        }
     }
 }
