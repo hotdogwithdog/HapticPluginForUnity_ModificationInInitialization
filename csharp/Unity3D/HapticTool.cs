@@ -251,7 +251,7 @@ public class HapticTool : MonoBehaviour {
             UnityHaptics.LogMessage(res, false);
             return;
         }
-        Debug.Log("A");
+
         IsInitialize = true;
 
         //  ForceWorkspaceUpdate();
